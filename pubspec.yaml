@@ -11,20 +11,20 @@ dependencies:
     sdk: flutter
   barikoi_api:
     git:
-      url: "git://github.com/barikoi/barikoi_api_dartlib.git"
-      ref: "e73582a8682e639fbedb3ce53fdc1fb3da8afdf7"
+      url: "git://github.com/imSaharukh/barikoi_api_dartlib.git"
+      # ref: "e73582a8682e639fbedb3ce53fdc1fb3da8afdf7"
 #  mapbox_gl:  ^0.11.0
   maplibre_gl:
     git:
       url: https://github.com/m0nac0/flutter-maplibre-gl.git
       ref: main
 #  barikoi_maps_flutter: ^1.0.2
-  geolocator: ^8.0.1
+  geolocator: ^8.0.5
   permission_handler: ^8.3.0
-  provider: ^4.0.1
+  provider: ^6.0.2
 #  barikoi_maps_webservice: ^0.0.16
-  tuple: ^1.0.3
-  http: ^0.12.0+4
+  tuple: ^2.0.0 
+  http: ^0.13.4
 
 dev_dependencies:
   flutter_test:
