@@ -4,15 +4,15 @@ version: 1.0.0
 homepage: https://github.com/fysoul17/google_maps_place_picker
 
 environment:
-  sdk: ">=2.1.0 <3.0.0"
+  sdk: '>=2.12.0 <3.0.0'
 
 dependencies:
   flutter:
     sdk: flutter
   barikoi_api:
     git:
-      url: "git://github.com/imSaharukh/barikoi_api_dartlib.git"
-      # ref: "e73582a8682e639fbedb3ce53fdc1fb3da8afdf7"
+      url: "git://github.com/imSaharukh/-barikoi_api_dartlib.git"
+      ref: "08c809336970300b0bb0b0ba58e58df028c7e91b"
 #  mapbox_gl:  ^0.11.0
   maplibre_gl:
     git:
@@ -23,7 +23,7 @@ dependencies:
   permission_handler: ^8.3.0
   provider: ^6.0.2
 #  barikoi_maps_webservice: ^0.0.16
-  tuple: ^2.0.0 
+  tuple: ^2.0.0
   http: ^0.13.4
 
 dev_dependencies:

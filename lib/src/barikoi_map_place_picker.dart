@@ -20,7 +20,7 @@ import 'package:tuple/tuple.dart';
 
 typedef SelectedPlaceWidgetBuilder = Widget Function(
   BuildContext context,
-  PickResult selectedPlace,
+  PickResult? selectedPlace,
   SearchingState state,
   bool isSearchBarFocused,
 );
@@ -34,10 +34,10 @@ class BarikoiMapPlacePicker extends StatelessWidget {
 
 
   const BarikoiMapPlacePicker({
-    Key key,
-    @required this.apikey,
-    @required this.initialTarget,
-    @required this.appBarKey,
+    Key? key,
+    required this.apikey,
+    required this.initialTarget,
+    required this.appBarKey,
     this.selectedPlaceWidgetBuilder,
     this.pinBuilder,
     this.onSearchFailed,
@@ -61,33 +61,33 @@ class BarikoiMapPlacePicker extends StatelessWidget {
   final LatLng initialTarget;
   final GlobalKey appBarKey;
 
-  final SelectedPlaceWidgetBuilder selectedPlaceWidgetBuilder;
-  final PinBuilder pinBuilder;
+  final SelectedPlaceWidgetBuilder? selectedPlaceWidgetBuilder;
+  final PinBuilder? pinBuilder;
 
-  final ValueChanged<String> onSearchFailed;
-  final VoidCallback onMoveStart;
-  final MapCreatedCallback onMapCreated;
-  final VoidCallback onToggleMapType;
-  final VoidCallback onMyLocation;
-  final ValueChanged<PickResult> onPlacePicked;
+  final ValueChanged<String?>? onSearchFailed;
+  final VoidCallback? onMoveStart;
+  final MapCreatedCallback? onMapCreated;
+  final VoidCallback? onToggleMapType;
+  final VoidCallback? onMyLocation;
+  final ValueChanged<PickResult>? onPlacePicked;
 
-  final int debounceMilliseconds;
-  final bool enableMapTypeButton;
-  final bool enableMyLocationButton;
+  final int? debounceMilliseconds;
+  final bool? enableMapTypeButton;
+  final bool? enableMyLocationButton;
 
-  final bool usePinPointingSearch;
-  final bool usePlaceDetailSearch;
+  final bool? usePinPointingSearch;
+  final bool? usePlaceDetailSearch;
 
-  final bool selectInitialPosition;
+  final bool? selectInitialPosition;
 
-  final String language;
+  final String? language;
 
-  final bool forceSearchOnZoomChanged;
-  final bool hidePlaceDetailsWhenDraggingPin;
+  final bool? forceSearchOnZoomChanged;
+  final bool? hidePlaceDetailsWhenDraggingPin;
 
   _searchByCameraLocation(PlaceProvider provider) async {
     // We don't want to search location again if camera location is changed by zooming in/out.
-    bool hasZoomChanged = provider.cameraPosition != null && provider.prevCameraPosition != null && provider.cameraPosition.zoom != provider.prevCameraPosition.zoom;
+    bool hasZoomChanged = provider.cameraPosition != null && provider.prevCameraPosition != null && provider.cameraPosition!.zoom != provider.prevCameraPosition!.zoom;
 
     if (forceSearchOnZoomChanged == false && hasZoomChanged) {
       provider.placeSearchingState = SearchingState.Idle;
@@ -97,22 +97,22 @@ class BarikoiMapPlacePicker extends StatelessWidget {
     provider.placeSearchingState = SearchingState.Searching;
 
     final Future<Response<InlineResponse200>> response = provider.bkoiplace.getrevgeoplace(
-      provider.mapController.cameraPosition.target.latitude, provider.mapController.cameraPosition.target.longitude
+      provider.mapController!.cameraPosition!.target.latitude, provider.mapController!.cameraPosition!.target.longitude
     );
     response.then((value) {
-      if(value.data.status ==200){
+      if(value.data!.status ==200){
 
-        provider.selectedPlace = PickResult.fromGeocodingResult(value.data.place);
+        provider.selectedPlace = PickResult.fromGeocodingResult(value.data!.place!);
         provider.placeSearchingState = SearchingState.Idle;
       }else{
         if (onSearchFailed != null) {
-          onSearchFailed(value.statusMessage);
+          onSearchFailed!(value.statusMessage);
         }
         provider.placeSearchingState = SearchingState.Idle;
       }
     }).catchError((error){
       if (onSearchFailed != null) {
-        onSearchFailed(error.toString());
+        onSearchFailed!(error.toString());
       }
       provider.placeSearchingState = SearchingState.Idle;
     });
@@ -151,7 +151,7 @@ class BarikoiMapPlacePicker extends StatelessWidget {
           provider.pinState = PinState.Idle;
 
           // When select initialPosition set to true.
-          if (selectInitialPosition) {
+          if (selectInitialPosition!) {
             provider.setCameraPosition(initialCameraPosition);
             _searchByCameraLocation(provider);
           }
@@ -166,16 +166,16 @@ class BarikoiMapPlacePicker extends StatelessWidget {
             return;
           }
 
-          onMoveStart();
+          onMoveStart!();
           // Perform search only if the setting is to true.
-          if (usePinPointingSearch) {
+          if (usePinPointingSearch!) {
             // Search current camera location only if camera has moved (dragged) before.
 
               // Cancel previous timer.
               if (provider.debounceTimer?.isActive ?? false) {
-                provider.debounceTimer.cancel();
+                provider.debounceTimer!.cancel();
               }
-              provider.debounceTimer = Timer(Duration(milliseconds: debounceMilliseconds), () {
+              provider.debounceTimer = Timer(Duration(milliseconds: debounceMilliseconds!), () {
                 _searchByCameraLocation(provider);
               });
 
@@ -202,7 +202,7 @@ class BarikoiMapPlacePicker extends StatelessWidget {
           if (pinBuilder == null) {
             return _defaultPinBuilder(context, state);
           } else {
-            return Builder(builder: (builderContext) => pinBuilder(builderContext, state));
+            return Builder(builder: (builderContext) => pinBuilder!(builderContext, state));
           }
         },
       ),
@@ -264,23 +264,23 @@ class BarikoiMapPlacePicker extends StatelessWidget {
   }
 
   Widget _buildFloatingCard() {
-    return Selector<PlaceProvider, Tuple4<PickResult, SearchingState, bool, PinState>>(
+    return Selector<PlaceProvider, Tuple4<PickResult?, SearchingState, bool, PinState>>(
       selector: (_, provider) => Tuple4(provider.selectedPlace, provider.placeSearchingState, provider.isSearchBarFocused, provider.pinState),
       builder: (context, data, __) {
-        if (((data.item1== null || data.item1.formattedAddress == null) && data.item2 == SearchingState.Idle) || data.item3 == true || data.item4 == PinState.Dragging && this.hidePlaceDetailsWhenDraggingPin) {
+        if (((data.item1== null || data.item1!.formattedAddress == null) && data.item2 == SearchingState.Idle) || data.item3 == true || data.item4 == PinState.Dragging && this.hidePlaceDetailsWhenDraggingPin!) {
           return Container();
         } else {
           if (selectedPlaceWidgetBuilder == null) {
             return _defaultPlaceWidgetBuilder(context, data.item1, data.item2);
           } else {
-            return Builder(builder: (builderContext) => selectedPlaceWidgetBuilder(builderContext, data.item1, data.item2, data.item3));
+            return Builder(builder: (builderContext) => selectedPlaceWidgetBuilder!(builderContext, data.item1, data.item2, data.item3));
           }
         }
       },
     );
   }
 
-  Widget _defaultPlaceWidgetBuilder(BuildContext context, PickResult data, SearchingState state) {
+  Widget _defaultPlaceWidgetBuilder(BuildContext context, PickResult? data, SearchingState state) {
     return FloatingCard(
       bottomPosition: MediaQuery.of(context).size.height * 0.05,
       leftPosition: MediaQuery.of(context).size.width * 0.025,
@@ -289,7 +289,7 @@ class BarikoiMapPlacePicker extends StatelessWidget {
       borderRadius: BorderRadius.circular(12.0),
       elevation: 4.0,
       color: Theme.of(context).cardColor,
-      child: state == SearchingState.Searching ? _buildLoadingIndicator() : _buildSelectionDetails(context, data),
+      child: state == SearchingState.Searching ? _buildLoadingIndicator() : _buildSelectionDetails(context, data!),
     );
   }
 
@@ -313,7 +313,7 @@ class BarikoiMapPlacePicker extends StatelessWidget {
       child: Column(
         children: <Widget>[
           Text(
-            result.formattedAddress,
+            result.formattedAddress!,
             style: TextStyle(fontSize: 18),
             textAlign: TextAlign.center,
           ),
@@ -326,7 +326,7 @@ class BarikoiMapPlacePicker extends StatelessWidget {
             ),
 
             onPressed: () {
-              onPlacePicked(result);
+              onPlacePicked!(result);
             },
           ),
         ],
@@ -335,14 +335,14 @@ class BarikoiMapPlacePicker extends StatelessWidget {
   }
 
   Widget _buildMapIcons(BuildContext context) {
-    final RenderBox appBarRenderBox = appBarKey.currentContext.findRenderObject();
+    final RenderBox appBarRenderBox = appBarKey.currentContext!.findRenderObject() as RenderBox;
 
     return Positioned(
       top: appBarRenderBox.size.height,
       right: 15,
       child: Column(
         children: <Widget>[
-          enableMapTypeButton
+          enableMapTypeButton!
               ? Container(
                   width: 35,
                   height: 35,
@@ -356,7 +356,7 @@ class BarikoiMapPlacePicker extends StatelessWidget {
                 )
               : Container(),
           SizedBox(height: 10),
-          enableMyLocationButton
+          enableMyLocationButton!
               ? Container(
                   width: 35,
                   height: 35,
