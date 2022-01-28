@@ -1,6 +1,7 @@
 import UIKit
 import Flutter
 import Mapbox
+import GoogleMaps
 
 @UIApplicationMain
 @objc class AppDelegate: FlutterAppDelegate {

@@ -123,7 +123,7 @@ class AutoCompleteSearchState extends State<AutoCompleteSearch> {
   Widget _buildSearchTextField() {
     return TextField(
       controller: controller,
-      focusNode: focus,
+      // focusNode: focus,
       decoration: InputDecoration(
         hintText: widget.hintText,
         border: InputBorder.none,
@@ -239,7 +239,8 @@ class AutoCompleteSearchState extends State<AutoCompleteSearch> {
 
     Overlay.of(context)!.insert(overlayEntry!);
   }
-  Widget _buildNotFoundOverlay(){
+
+  Widget _buildNotFoundOverlay() {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
       child: Row(
@@ -252,7 +253,7 @@ class AutoCompleteSearchState extends State<AutoCompleteSearch> {
           SizedBox(width: 24),
           Expanded(
             child: Text(
-               "Not Found",
+              "Not Found",
               style: TextStyle(fontSize: 16),
             ),
           )
@@ -260,6 +261,7 @@ class AutoCompleteSearchState extends State<AutoCompleteSearch> {
       ),
     );
   }
+
   Widget _buildSearchingOverlay() {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
@@ -304,13 +306,15 @@ class AutoCompleteSearchState extends State<AutoCompleteSearch> {
     if (searchTerm.isNotEmpty) {
       final Future<Response<InlineResponse2001>> response =
           provider.bkoiplace.getautocompleteplacelist(searchTerm);
-      response.then((value){
-        if(value.data!.places!.isNotEmpty) _displayOverlay(_buildPredictionOverlay(List.from(value.data!.places!)));
-        else  {
+      response.then((value) {
+        if (value.data!.places!.isNotEmpty)
+          _displayOverlay(
+              _buildPredictionOverlay(List.from(value.data!.places!)));
+        else {
           _displayOverlay(_buildNotFoundOverlay());
           widget.onSearchFailed!(value.statusMessage);
-        }})
-      .catchError((error){
+        }
+      }).catchError((error) {
         _displayOverlay(_buildNotFoundOverlay());
         widget.onSearchFailed!(error.toString());
       });
