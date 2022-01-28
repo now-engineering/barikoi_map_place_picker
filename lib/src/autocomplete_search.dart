@@ -64,6 +64,7 @@ class AutoCompleteSearch extends StatefulWidget {
 class AutoCompleteSearchState extends State<AutoCompleteSearch> {
   TextEditingController controller = TextEditingController();
   FocusNode focus = FocusNode();
+  FocusNode focus2 = FocusNode();
   OverlayEntry? overlayEntry;
   SearchProvider provider = SearchProvider();
 
@@ -123,7 +124,7 @@ class AutoCompleteSearchState extends State<AutoCompleteSearch> {
   Widget _buildSearchTextField() {
     return TextField(
       controller: controller,
-      // focusNode: focus,
+      focusNode: focus2,
       decoration: InputDecoration(
         hintText: widget.hintText,
         border: InputBorder.none,
@@ -195,6 +196,7 @@ class AutoCompleteSearchState extends State<AutoCompleteSearch> {
     PlaceProvider provider = PlaceProvider.of(context, listen: false);
     provider.isSearchBarFocused = focus.hasFocus;
     provider.debounceTimer?.cancel();
+    log("Focus changed");
   }
 
   _searchPlace(String searchTerm) {
@@ -292,6 +294,7 @@ class AutoCompleteSearchState extends State<AutoCompleteSearch> {
               prediction: p,
               onTap: (selectedPrediction) {
                 resetSearchBar();
+                focus2.unfocus();
                 widget.onPicked(selectedPrediction);
               },
             ),
