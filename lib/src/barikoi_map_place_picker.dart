@@ -31,8 +31,6 @@ typedef PinBuilder = Widget Function(
 );
 
 class BarikoiMapPlacePicker extends StatelessWidget {
-
-
   const BarikoiMapPlacePicker({
     Key? key,
     required this.apikey,
@@ -87,7 +85,9 @@ class BarikoiMapPlacePicker extends StatelessWidget {
 
   _searchByCameraLocation(PlaceProvider provider) async {
     // We don't want to search location again if camera location is changed by zooming in/out.
-    bool hasZoomChanged = provider.cameraPosition != null && provider.prevCameraPosition != null && provider.cameraPosition!.zoom != provider.prevCameraPosition!.zoom;
+    bool hasZoomChanged = provider.cameraPosition != null &&
+        provider.prevCameraPosition != null &&
+        provider.cameraPosition?.zoom != provider.prevCameraPosition?.zoom;
 
     if (forceSearchOnZoomChanged == false && hasZoomChanged) {
       provider.placeSearchingState = SearchingState.Idle;
@@ -95,29 +95,31 @@ class BarikoiMapPlacePicker extends StatelessWidget {
     }
 
     provider.placeSearchingState = SearchingState.Searching;
+    var lat = provider.mapController?.cameraPosition?.target.latitude;
+    var lon = provider.mapController?.cameraPosition?.target.longitude;
 
-    final Future<Response<InlineResponse200>> response = provider.bkoiplace.getrevgeoplace(
-      provider.mapController!.cameraPosition!.target.latitude, provider.mapController!.cameraPosition!.target.longitude
-    );
+    final Future<Response<InlineResponse200>> response =
+        provider.bkoiplace.getrevgeoplace(lat!, lon!);
     response.then((value) {
-      if(value.data!.status ==200){
+      if (value.data?.status == 200) {
+        provider.selectedPlace =
+            PickResult.fromGeocodingResult(value.data!.place!)
+                .setLatitude(lat)
+                .setLongitude(lon);
 
-        provider.selectedPlace = PickResult.fromGeocodingResult(value.data!.place!);
         provider.placeSearchingState = SearchingState.Idle;
-      }else{
+      } else {
         if (onSearchFailed != null) {
           onSearchFailed!(value.statusMessage);
         }
         provider.placeSearchingState = SearchingState.Idle;
       }
-    }).catchError((error){
+    }).catchError((error) {
       if (onSearchFailed != null) {
         onSearchFailed!(error.toString());
       }
       provider.placeSearchingState = SearchingState.Idle;
     });
-
-
   }
 
   @override
@@ -133,65 +135,63 @@ class BarikoiMapPlacePicker extends StatelessWidget {
   }
 
   Widget _buildMap(BuildContext context) {
+    PlaceProvider provider = PlaceProvider.of(context, listen: false);
+    CameraPosition initialCameraPosition =
+        CameraPosition(target: initialTarget, zoom: 16);
+    return MaplibreMap(
+      styleString:
+          "https://map.barikoi.com/styles/osm-liberty/style.json?key=" +
+              this.apikey,
+      initialCameraPosition: CameraPosition(target: initialTarget, zoom: 16),
+      myLocationRenderMode: MyLocationRenderMode.NORMAL,
+      compassEnabled: false,
+      zoomGesturesEnabled: true,
+      myLocationEnabled: true,
+      onMapCreated: (MaplibreMapController controller) {
+        provider.mapController = controller;
+        provider.setCameraPosition(null);
+        provider.pinState = PinState.Idle;
 
-      PlaceProvider provider = PlaceProvider.of(context, listen: false);
-      CameraPosition initialCameraPosition = CameraPosition(target: initialTarget, zoom: 16);
-      return MaplibreMap(
-
-        styleString: "https://map.barikoi.com/styles/osm-liberty/style.json?key="+this.apikey,
-        initialCameraPosition:
-         CameraPosition(target: initialTarget,zoom: 16),
-        myLocationRenderMode: MyLocationRenderMode.NORMAL,
-        compassEnabled: false,
-        zoomGesturesEnabled: true,
-        myLocationEnabled: true,
-        onMapCreated: (MaplibreMapController controller) {
-          provider.mapController = controller;
-          provider.setCameraPosition(null);
+        // When select initialPosition set to true.
+        if (selectInitialPosition!) {
+          provider.setCameraPosition(initialCameraPosition);
+          _searchByCameraLocation(provider);
+        }
+      },
+      trackCameraPosition: true,
+      onCameraIdle: () {
+        log("camera movement stopped");
+        if (provider.isAutoCompleteSearching) {
+          provider.isAutoCompleteSearching = false;
           provider.pinState = PinState.Idle;
+          return;
+        }
 
-          // When select initialPosition set to true.
-          if (selectInitialPosition!) {
-            provider.setCameraPosition(initialCameraPosition);
+        onMoveStart!();
+        // Perform search only if the setting is to true.
+        if (usePinPointingSearch!) {
+          // Search current camera location only if camera has moved (dragged) before.
+
+          // Cancel previous timer.
+          if (provider.debounceTimer?.isActive ?? false) {
+            provider.debounceTimer!.cancel();
+          }
+          provider.debounceTimer =
+              Timer(Duration(milliseconds: debounceMilliseconds!), () {
             _searchByCameraLocation(provider);
-          }
-        },
-        trackCameraPosition: true,
-        onCameraIdle: () {
+          });
+        }
 
-          log("camera movement stopped");
-          if (provider.isAutoCompleteSearching) {
-            provider.isAutoCompleteSearching = false;
-            provider.pinState = PinState.Idle;
-            return;
-          }
-
-          onMoveStart!();
-          // Perform search only if the setting is to true.
-          if (usePinPointingSearch!) {
-            // Search current camera location only if camera has moved (dragged) before.
-
-              // Cancel previous timer.
-              if (provider.debounceTimer?.isActive ?? false) {
-                provider.debounceTimer!.cancel();
-              }
-              provider.debounceTimer = Timer(Duration(milliseconds: debounceMilliseconds!), () {
-                _searchByCameraLocation(provider);
-              });
-
-          }
-
-          provider.pinState = PinState.Idle;
-        },
-        /*onCameraIdle: (CameraPosition position) {
+        provider.pinState = PinState.Idle;
+      },
+      /*onCameraIdle: (CameraPosition position) {
           provider.setCameraPosition();
         },*/
-        // gestureRecognizers make it possible to navigate the map when it's a
-        // child in a scroll view e.g ListView, SingleChildScrollView...
-        gestureRecognizers: Set()..add(Factory<EagerGestureRecognizer>(() => EagerGestureRecognizer())),
-
-      );
-
+      // gestureRecognizers make it possible to navigate the map when it's a
+      // child in a scroll view e.g ListView, SingleChildScrollView...
+      gestureRecognizers: Set()
+        ..add(Factory<EagerGestureRecognizer>(() => EagerGestureRecognizer())),
+    );
   }
 
   Widget _buildPin() {
@@ -202,7 +202,9 @@ class BarikoiMapPlacePicker extends StatelessWidget {
           if (pinBuilder == null) {
             return _defaultPinBuilder(context, state);
           } else {
-            return Builder(builder: (builderContext) => pinBuilder!(builderContext, state));
+            return Builder(
+                builder: (builderContext) =>
+                    pinBuilder!(builderContext, state));
           }
         },
       ),
@@ -243,7 +245,8 @@ class BarikoiMapPlacePicker extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
-                AnimatedPin(child: Icon(Icons.place, size: 36, color: Colors.red)),
+                AnimatedPin(
+                    child: Icon(Icons.place, size: 36, color: Colors.red)),
                 SizedBox(height: 42),
               ],
             ),
@@ -264,23 +267,35 @@ class BarikoiMapPlacePicker extends StatelessWidget {
   }
 
   Widget _buildFloatingCard() {
-    return Selector<PlaceProvider, Tuple4<PickResult?, SearchingState, bool, PinState>>(
-      selector: (_, provider) => Tuple4(provider.selectedPlace, provider.placeSearchingState, provider.isSearchBarFocused, provider.pinState),
+    return Selector<PlaceProvider,
+        Tuple4<PickResult?, SearchingState, bool, PinState>>(
+      selector: (_, provider) => Tuple4(
+          provider.selectedPlace,
+          provider.placeSearchingState,
+          provider.isSearchBarFocused,
+          provider.pinState),
       builder: (context, data, __) {
-        if (((data.item1== null || data.item1!.formattedAddress == null) && data.item2 == SearchingState.Idle) || data.item3 == true || data.item4 == PinState.Dragging && this.hidePlaceDetailsWhenDraggingPin!) {
+        if (((data.item1 == null || data.item1!.formattedAddress == null) &&
+                data.item2 == SearchingState.Idle) ||
+            data.item3 == true ||
+            data.item4 == PinState.Dragging &&
+                this.hidePlaceDetailsWhenDraggingPin!) {
           return Container();
         } else {
           if (selectedPlaceWidgetBuilder == null) {
             return _defaultPlaceWidgetBuilder(context, data.item1, data.item2);
           } else {
-            return Builder(builder: (builderContext) => selectedPlaceWidgetBuilder!(builderContext, data.item1, data.item2, data.item3));
+            return Builder(
+                builder: (builderContext) => selectedPlaceWidgetBuilder!(
+                    builderContext, data.item1, data.item2, data.item3));
           }
         }
       },
     );
   }
 
-  Widget _defaultPlaceWidgetBuilder(BuildContext context, PickResult? data, SearchingState state) {
+  Widget _defaultPlaceWidgetBuilder(
+      BuildContext context, PickResult? data, SearchingState state) {
     return FloatingCard(
       bottomPosition: MediaQuery.of(context).size.height * 0.05,
       leftPosition: MediaQuery.of(context).size.width * 0.025,
@@ -289,7 +304,9 @@ class BarikoiMapPlacePicker extends StatelessWidget {
       borderRadius: BorderRadius.circular(12.0),
       elevation: 4.0,
       color: Theme.of(context).cardColor,
-      child: state == SearchingState.Searching ? _buildLoadingIndicator() : _buildSelectionDetails(context, data!),
+      child: state == SearchingState.Searching
+          ? _buildLoadingIndicator()
+          : _buildSelectionDetails(context, data!),
     );
   }
 
@@ -319,12 +336,10 @@ class BarikoiMapPlacePicker extends StatelessWidget {
           ),
           SizedBox(height: 10),
           OutlinedButton(
-
             child: Text(
               "Select here",
               style: TextStyle(fontSize: 16),
             ),
-
             onPressed: () {
               onPlacePicked!(result);
             },
@@ -335,7 +350,8 @@ class BarikoiMapPlacePicker extends StatelessWidget {
   }
 
   Widget _buildMapIcons(BuildContext context) {
-    final RenderBox appBarRenderBox = appBarKey.currentContext!.findRenderObject() as RenderBox;
+    final RenderBox appBarRenderBox =
+        appBarKey.currentContext!.findRenderObject() as RenderBox;
 
     return Positioned(
       top: appBarRenderBox.size.height,
@@ -348,7 +364,9 @@ class BarikoiMapPlacePicker extends StatelessWidget {
                   height: 35,
                   child: RawMaterialButton(
                     shape: CircleBorder(),
-                    fillColor: Theme.of(context).brightness == Brightness.dark ? Colors.black54 : Colors.white,
+                    fillColor: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.black54
+                        : Colors.white,
                     elevation: 8.0,
                     onPressed: onToggleMapType,
                     child: Icon(Icons.layers),
@@ -362,7 +380,9 @@ class BarikoiMapPlacePicker extends StatelessWidget {
                   height: 35,
                   child: RawMaterialButton(
                     shape: CircleBorder(),
-                    fillColor: Theme.of(context).brightness == Brightness.dark ? Colors.black54 : Colors.white,
+                    fillColor: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.black54
+                        : Colors.white,
                     elevation: 8.0,
                     onPressed: onMyLocation,
                     child: Icon(Icons.my_location),
